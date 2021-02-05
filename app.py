@@ -36,6 +36,7 @@ def answer():
         new_link = f'/questions/{str(next_question_number)}'
         return redirect(new_link)
     else:
+        raise
         return redirect('/thanks')
 
 @app.route('/thanks')
