@@ -1,4 +1,4 @@
-from flask import Flask, request, render_template, redirect, flash
+from flask import Flask, request, render_template, redirect, flash, session
 from flask_debugtoolbar import DebugToolbarExtension
 from surveys import satisfaction_survey
 
@@ -12,16 +12,19 @@ responses = []
 def base():
     title = satisfaction_survey.title
     instructions = satisfaction_survey.instructions
+
     return render_template('survey_start.html', title = title, instructions = instructions)
 
 @app.route('/questions/<int:number>')
 def questions(number):
-    if (len(responses) == len(satisfaction_survey.questions)):
+    print(session['responses'])
+    if (len(session['responses']) == len(satisfaction_survey.questions)):
         stop_messing()
         return redirect('/thanks')
-    if (not number == len(responses)):
+    if (not number == len(session['responses'])):
         stop_messing()
-        return redirect(f'/questions/{len(responses)}')
+        length = len(session['responses'])
+        return redirect(f'/questions/{length}')
     question = satisfaction_survey.questions[number]
     question_text = question.question
     question_answers = question.choices
@@ -30,13 +33,15 @@ def questions(number):
 
 @app.route('/answer', methods=['POST'])
 def answer():
+    # responses.append(request.form['answer'])
+    responses = session['responses']
     responses.append(request.form['answer'])
-    if (len(responses) < len(satisfaction_survey.questions)):
-        next_question_number = len(responses)
+    session['responses'] = responses
+    if (len(session['responses']) < len(satisfaction_survey.questions)):
+        next_question_number = len(session['responses'])
         new_link = f'/questions/{str(next_question_number)}'
         return redirect(new_link)
     else:
-        raise
         return redirect('/thanks')
 
 @app.route('/thanks')
@@ -45,3 +50,8 @@ def thanks():
 
 def stop_messing():
     return flash('You\'re trying to access an invalid question')
+
+@app.route('/session', methods=['POST'])
+def responses_session():
+    session['responses'] = []
+    return redirect('/questions/0')
